@@ -23,9 +23,17 @@ Cela devrait retourner l'invite de commande redis.
 
 ## Présentation de la vulnérabilité
 
-La vulnérabilité réside dans une mauvaise configuration par défaut des versions Redis 4.x et 5.x. Le service est lié à l'interface 0.0.0.0 sans mécanisme d'authentification activé et avec le "Protected Mode" désactivé.
+La vulnérabilité exploitée n'est pas un bug logiciel classique, mais une faiblesse structurelle dans le modèle de sécurité des versions Redis 4.x et 5.x.
 
-Cela permet à un attaquant non authentifié d'utiliser les commandes SLAVEOF (pour la réplication) et CONFIG (pour la configuration) à distance. En combinant ces accès avec la fonctionnalité de chargement dynamique de modules, un attaquant peut obtenir une exécution de code à distance (RCE).
+Ces versions introduisent une fonctionnalité puissante, le chargement dynamique de modules (MODULE LOAD), mais ne disposent pas encore des listes de contrôle d'accès (ACL) granulaires (apparues seulement en version 6.0). En conséquence, tout utilisateur capable de se connecter à l'instance possède implicitement les privilèges administratifs complets.
+
+L'attaque repose sur l'abus de fonctionnalités légitimes :
+
+1. Le protocole de réplication (SLAVEOF) permet de forcer la synchronisation de données.
+
+2. L'absence de restriction sur la commande MODULE LOAD permet d'injecter et d'exécuter du code compilé arbitraire.
+
+C'est la combinaison de ces fonctionnalités, accessibles sans restriction dans une configuration par défaut non authentifiée, qui transforme une base de données en vecteur d'exécution de code à distance (RCE).
 
 ## Exploit de la vulnérabilité
 
@@ -83,11 +91,26 @@ L'exploit repose sur la chaîne d'événements suivante, rendue possible par l'a
 
 ## Proposition justifiée d’un correctif
 
-Conformément aux contraintes, nous ne pouvons pas mettre à jour le logiciel. Nous devons sécuriser la configuration.
+Pour déterminer le correctif adéquat, nous avons analysé la chaîne d'attaque et évalué les mécanismes de sécurité disponibles dans cette version de Redis.
 
-Solution : Activer l'authentification (requirepass).
+### Analyse de la cause racine
+L'attaque réussit car le serveur accepte aveuglément des commandes critiques (CONFIG, SLAVEOF, MODULE LOAD) de n'importe quel utilisateur connecté. Le problème fondamental n'est pas l'existence de ces commandes (qui sont utiles), mais l'absence de contrôle sur qui a le droit de les exécuter.
 
-Justification : En définissant un mot de passe fort, le serveur Redis rejettera toutes les commandes non authentifiées. Cela empêche l'attaquant d'initier la commande SLAVEOF ou CONFIG. Si l'attaquant ne peut pas forcer la synchronisation, il ne peut pas envoyer son module malveillant, neutralisant ainsi totalement la chaîne d'attaque à sa première étape.
+### Évaluation des solutions possibles 
+Conformément aux contraintes du projet, la mise à jour vers Redis 6 (qui possède des ACLs fines) est interdite. Il nous reste deux options de configuration :  
+
+1. Option A : Renommer ou désactiver les commandes dangereuses (rename-command).
+
+- Avantage : Empêche spécifiquement l'usage de MODULE ou CONFIG.
+
+- Inconvénient : Complexe à mettre en œuvre sans fichier de configuration (redis.conf) et risque de casser des outils d'administration légitimes qui dépendent de ces commandes.
+
+2. Option B : Activer l'authentification (requirepass).
+
+- Avantage : Bloque l'accès à toutes les commandes pour toute personne non autorisée. C'est la mesure de sécurité native prévue par les concepteurs de Redis pour ce scénario.
+
+### Solution retenue
+Nous choisissons l'activation de l'authentification. C'est la solution la plus robuste car elle applique une défense en profondeur : au lieu de courir après chaque commande dangereuse, nous bloquons l'accès initial au serveur. Sans le mot de passe, l'attaquant ne peut même pas initier le dialogue avec le serveur, neutralisant l'attaque à l'étape 0.
 
 ## Application du correctif
 
