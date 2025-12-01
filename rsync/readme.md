@@ -7,7 +7,7 @@ Rsync (Remote Sync) est un outil de synchronisation de fichiers très rapide et 
 ```
 git clone https://github.com/vulhub/vulhub
 cd rsync/common
-docker-compose up -d
+sudo docker-compose up -d
 ```
 ## Présentation de la vulnérabilité
 
