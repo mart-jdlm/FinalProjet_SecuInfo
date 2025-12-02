@@ -1,11 +1,15 @@
 # Redis Post Exploitation Due to Master and Slave Synchronisation
 ## Présentation du logiciel
 
-Redis est une base de données en mémoire à haute performance de type clé-valeur, principalement utilisée pour la mise en cache, la gestion des sessions et d'autres applications nécessitant une réponse rapide. Il stocke les données en mémoire, ce qui le rend exceptionnellement rapide et fiable, et prend en charge des structures de données polyvalentes comme les chaînes, les listes, les ensembles et les hachages.  
+Redis est une base de données en mémoire haute performance comme oracle ou mongoDB, utilisée par des géants comme Twitter, Airbnb ou Uber pour la gestion de cache, les files d'attente ou les sessions utilisateurs. Sa capacité à répondre en moins d'une milliseconde en fait un pilier critique des infrastructures web modernes.
+
+La sécurité de Redis est capitale car il ne s'agit pas d'un simple cache temporaire. Une instance compromise peut entraîner des conséquences désastreuses : vol de données sensibles, minage de cryptomonnaie (cryptojacking) et surtout, comme nous le verrons, une exécution de code à distance (RCE) permettant à l'attaquant de prendre le contrôle total du serveur.
 
 ## Chargement de l'image Vulhub
 
-Nous utilisons l'environnement Vulhub pour déployer une version vulnérable de Redis (4.x/5.x) via Docker.
+Nous utilisons l'environnement Vulhub pour déployer le scénario redis/4-unacc via Docker.
+
+Ce dossier simule une installation de Redis 4.x "Unauthenticated". Cela correspond à une erreur de configuration fréquente où le service est installé par défaut sans mot de passe et exposé sur le réseau, laissant le port 6379 accessible à n'importe qui.
 
 ### Création et lancement du conteneur
 ```
@@ -23,17 +27,17 @@ Cela devrait retourner l'invite de commande redis.
 
 ## Présentation de la vulnérabilité
 
-La vulnérabilité exploitée n'est pas un bug logiciel classique, mais une faiblesse structurelle dans le modèle de sécurité des versions Redis 4.x et 5.x.
+La faille exploitée repose sur le détournement du mécanisme légitime de synchronisation Maître-Esclave de Redis, combiné au chargement dynamique de modules apparu dans les versions 4.x.
 
-Ces versions introduisent une fonctionnalité puissante, le chargement dynamique de modules (MODULE LOAD), mais ne disposent pas encore des listes de contrôle d'accès (ACL) granulaires (apparues seulement en version 6.0). En conséquence, tout utilisateur capable de se connecter à l'instance possède implicitement les privilèges administratifs complets.
+Redis permet à un serveur de devenir l'esclave d'un autre pour répliquer les données. Lors de cette connexion, le protocole impose une synchronisation complète : le maître envoie sa base de données sous forme de fichier binaire, que l'esclave télécharge, écrit sur son disque et charge en mémoire.
 
-L'attaque repose sur l'abus de fonctionnalités légitimes :
+L'attaque "Rogue Master" abuse de ce fonctionnement :
 
-1. Le protocole de réplication (SLAVEOF) permet de forcer la synchronisation de données.
+1. Usurpation du Maître : L'attaquant configure un serveur Redis malveillant et force la victime (via la commande SLAVEOF) à se connecter à lui comme esclave.
 
-2. L'absence de restriction sur la commande MODULE LOAD permet d'injecter et d'exécuter du code compilé arbitraire.
+2. Synchronisation Piégée : Au lieu d'envoyer une base de données légitime, le faux maître envoie un module malveillant (code compilé .so). La victime, respectant le protocole de synchronisation, écrit ce fichier sur son disque système.
 
-C'est la combinaison de ces fonctionnalités, accessibles sans restriction dans une configuration par défaut non authentifiée, qui transforme une base de données en vecteur d'exécution de code à distance (RCE).
+3. Exécution du code (RCE) : Une fois le fichier présent physiquement sur le disque, l'attaquant utilise la commande MODULE LOAD pour l'injecter dans le processus Redis. Cela permet d'exécuter des commandes système arbitraires avec les droits du service Redis.
 
 ## Exploit de la vulnérabilité
 
