@@ -1,7 +1,15 @@
 # Rsync Unauthorized Access
 ## Présentation du logiciel
 
-Rsync (Remote Sync) est un outil de synchronisation de fichiers très rapide et polyvalent, largement utilisé sur les systèmes Linux/Unix pour les sauvegardes et le transfert de données. Il peut fonctionner via SSH ou via son propre démon (service) sur le port TCP 873.
+Rsync est le pilier de la synchronisation de fichiers dans le monde Linux/Unix. Grâce à son algorithme de transfert différentiel (qui ne copie que les modifications), il est indispensable pour les opérations nécessitant de la rapidité et de l'efficacité.
+
+Enjeux et infrastructures critiques : Ce logiciel est un composant névralgique pour de nombreuses organisations :
+
+Sauvegardes d'entreprise : Il assure la pérennité des données (Disaster Recovery). Si compromis, les backups peuvent être volés ou altérés (ransomware).
+
+Déploiement Web (CI/CD) : Il est utilisé pour pousser le code en production. Une compromission permet d'injecter du code malveillant directement sur les serveurs publics.
+
+Cluster et Cloud : Il synchronise les données entre plusieurs nœuds. Un accès non autorisé permet un mouvement latéral vers d'autres machines du réseau.
 
 ## Chargement de l'image Vulhub
 Cette étape prépare l'environnement sur la machine victime.
@@ -15,7 +23,9 @@ sudo docker ps
 ```
 ## Présentation de la vulnérabilité
 
-Il s'agit d'un accès non autorisé dû à une mauvaise configuration du démon Rsync. Dans cet environnement, le démon est configuré avec un module (un dossier partagé) accessible en lecture et écriture sans aucune authentification. Puisque le démon s'exécute souvent avec les privilèges root, cela permet à un attaquant de lire des fichiers sensibles ou d'écrire des scripts malveillants (comme des tâches Cron) pour obtenir une exécution de code à distance.
+La faille exploitée est un défaut de configuration critique du démon Rsync (port 873). Par défaut, sans restriction explicite dans rsyncd.conf, le service peut autoriser des connexions anonymes avec des droits élevés.
+
+Mécanisme et Impact : Dans notre cas, le démon est configuré avec un module accessible en écriture (read only = no) et sans mot de passe. Puisque le service tourne souvent avec les privilèges root, cette erreur transforme un simple outil de transfert en porte dérobée majeure. L'attaquant ne se limite pas à lire des fichiers : il peut exécuter des commandes système (RCE) en déposant des tâches planifiées (Cron) malveillantes ou des clés SSH, prenant ainsi le contrôle total de l'infrastructure hébergeant le service.
 
 ## Exploit de la vulnérabilité
 
