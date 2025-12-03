@@ -1,15 +1,15 @@
 # Rsync Unauthorized Access
 ## Présentation du logiciel
 
-Rsync est le pilier de la synchronisation de fichiers dans le monde Linux/Unix. Grâce à son algorithme de transfert différentiel (qui ne copie que les modifications), il est indispensable pour les opérations nécessitant de la rapidité et de l'efficacité.
+Rsync (Remote Sync) est un utilitaire standard de synchronisation de fichiers sur les systèmes Linux et Unix. Il se distingue par l'utilisation d'un algorithme de transfert différentiel qui ne copie que les octets modifiés d'un fichier, optimisant ainsi l'usage de la bande passante. Il fonctionne soit via SSH, soit via son propre démon écoutant sur le port TCP 873.
 
-Enjeux et infrastructures critiques : Ce logiciel est un composant névralgique pour de nombreuses organisations :
+Contextes d'utilisation et risques associés : Ce logiciel est intégré dans plusieurs processus d'infrastructure, ce qui définit la surface d'attaque en cas de faille :
 
-Sauvegardes d'entreprise : Il assure la pérennité des données (Disaster Recovery). Si compromis, les backups peuvent être volés ou altérés (ransomware).
+- Sauvegardes et Archivage : Rsync est utilisé pour les plans de reprise d'activité (Disaster Recovery). Une compromission expose l'organisation au vol de données massives ou à l'altération des archives (ex: suppression avant une attaque ransomware).
 
-Déploiement Web (CI/CD) : Il est utilisé pour pousser le code en production. Une compromission permet d'injecter du code malveillant directement sur les serveurs publics.
+- Déploiement applicatif (CI/CD) : Il est souvent employé pour transférer le code vers les environnements de production. Un accès non autorisé permettrait d'injecter des scripts malveillants directement sur les serveurs web publics.
 
-Cluster et Cloud : Il synchronise les données entre plusieurs nœuds. Un accès non autorisé permet un mouvement latéral vers d'autres machines du réseau.
+- Architecture Cluster : Il assure la réplication de données entre différents nœuds serveurs. L'accès à ce service peut faciliter un mouvement latéral vers d'autres machines du réseau interne.
 
 ## Chargement de l'image Vulhub
 Cette étape prépare l'environnement sur la machine victime.
